@@ -3,7 +3,7 @@ module ncc/go-mezon-bot
 go 1.23.4
 
 require (
-	github.com/nccasia/mezon-go-sdk v0.0.5
+	github.com/nccasia/mezon-go-sdk v0.0.6
 	github.com/pion/webrtc/v4 v4.0.5
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.27.0
@@ -13,13 +13,10 @@ require (
 require (
 	github.com/antihax/optional v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-gst/go-glib v1.4.0 // indirect
-	github.com/go-gst/go-gst v1.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pion/datachannel v1.5.9 // indirect
