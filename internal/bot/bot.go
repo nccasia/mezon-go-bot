@@ -20,6 +20,7 @@ type Bot struct {
 	logger      *zap.Logger
 	signaling   mezonsdk.IWSConnection
 	callService mezonsdk.ICallService
+	checkinChan chan string
 }
 
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
@@ -42,7 +43,13 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 		ICEServers: []webrtc.ICEServer{constants.ICE},
 	})
 
-	return &Bot{commands: make(map[string]CommandHandler), signaling: signaling, callService: callService, logger: logger}, nil
+	return &Bot{
+		commands:    make(map[string]CommandHandler),
+		signaling:   signaling,
+		callService: callService,
+		logger:      logger,
+		checkinChan: make(chan string, 1000),
+	}, nil
 }
 
 func (b *Bot) RegisterCommand(cmd string, handler CommandHandler) {
