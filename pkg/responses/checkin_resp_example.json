@@ -1,0 +1,13 @@
+{
+    "accountEmployeeId": "23f29b87-178c-43d6-a5f9-c838b73e2c93",
+    "employeeId": "7c272a7d-308c-4ded-8e1a-1b45986b1362",
+    "facialRecognitionStatus": "PENDING",
+    "firstName": "Minh 1",
+    "identityVerified": true,
+    "imageVerifyId": "053d3baf-4a5a-48f9-90a9-334451cdc94b",
+    "lastClockEventDTO": null,
+    "lastName": "Nguyễn Văn",
+    "probability": 0.577196,
+    "shifts": [],
+    "showMessage": true
+}

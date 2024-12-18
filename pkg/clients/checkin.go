@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"ncc/go-mezon-bot/pkg/responses"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func CheckinApi(imageBase64 string) (map[string]interface{}, error) {
+func CheckinApi(imageBase64 string) (*responses.CheckinRes, error) {
 
 	url := "https://checkin.nccsoft.vn/v1/employees/facial-recognition/ims-verify"
 	method := "POST"
@@ -49,7 +50,7 @@ func CheckinApi(imageBase64 string) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	data := make(map[string]interface{})
+	var data *responses.CheckinRes
 	err = json.Unmarshal(body, &data)
 	return data, err
 }
