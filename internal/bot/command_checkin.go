@@ -14,6 +14,7 @@ func (b *Bot) StartCheckin() {
 	b.callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
 	b.callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
 	b.callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	b.callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 	b.signaling.SetOnWebrtcSignalingFwd(b.callService.OnWebsocketEvent)
 
 	b.logger.Info("Bot checkin is running...")
