@@ -3,8 +3,9 @@ package main
 import (
 	"ncc/go-mezon-bot/internal/rtc"
 
+	radiostation "ncc/go-mezon-bot/internal/radio-station"
+
 	"github.com/nccasia/mezon-go-sdk/configs"
-	radiostation "github.com/nccasia/mezon-go-sdk/radio-station"
 	"github.com/pion/webrtc/v4"
 )
 

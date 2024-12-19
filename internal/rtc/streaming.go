@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+
+	radiostation "ncc/go-mezon-bot/internal/radio-station"
+
 	"os"
 	"sync"
 	"time"
-
-	radiostation "github.com/nccasia/mezon-go-sdk/radio-station"
 
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
