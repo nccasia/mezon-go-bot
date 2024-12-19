@@ -3,7 +3,7 @@ module ncc/go-mezon-bot
 go 1.23.4
 
 require (
-	github.com/nccasia/mezon-go-sdk v0.0.10
+	github.com/nccasia/mezon-go-sdk v0.0.12
 	github.com/pion/webrtc/v4 v4.0.5
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.27.0

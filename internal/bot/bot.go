@@ -3,9 +3,11 @@ package bot
 import (
 	"ncc/go-mezon-bot/config"
 	"ncc/go-mezon-bot/internal/constants"
+	"ncc/go-mezon-bot/internal/rtc"
 	"strings"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
+	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
@@ -19,14 +21,14 @@ type Bot struct {
 	commands    map[string]CommandHandler
 	logger      *zap.Logger
 	signaling   mezonsdk.IWSConnection
-	callService mezonsdk.ICallService
+	callService rtc.ICallService
 	checkinChan chan string
 }
 
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
-	signaling, err := mezonsdk.NewWSConnection(&mezonsdk.Config{
+	signaling, err := mezonsdk.NewWSConnection(&configs.Config{
 		BasePath:     cfg.Domain,
 		ApiKey:       cfg.BotCheckin.ApiKey,
 		Timeout:      15,
@@ -39,7 +41,7 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 	}
 
 	// make call service
-	callService := mezonsdk.NewCallService(cfg.BotCheckin.BotId, signaling, webrtc.Configuration{
+	callService := rtc.NewCallService(cfg.BotCheckin.BotId, signaling, webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{constants.ICE},
 	})
 
