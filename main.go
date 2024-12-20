@@ -24,11 +24,18 @@ func main() {
 	defer log.Sync() // Flush log
 
 	// Start Bot Checkin
-	b, err := bot.NewBot(cfg, log)
+	botCheckin, err := bot.NewBot(cfg, cfg.BotCheckin, log)
 	if err != nil {
-		log.Fatal("Failed to initialize bot", zap.Error(err))
+		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
 	}
-	b.StartCheckin()
+	botCheckin.Checkin().Start()
+
+	// Start Bot Ncc8
+	botNcc8, err := bot.NewBot(cfg, cfg.BotNcc8, log)
+	if err != nil {
+		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
+	}
+	botNcc8.Setup().NCC8().Start()
 
 	// Register the health check endpoint
 	http.HandleFunc("/health", healthCheckHandler)

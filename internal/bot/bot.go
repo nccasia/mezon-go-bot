@@ -2,74 +2,75 @@ package bot
 
 import (
 	"ncc/go-mezon-bot/config"
-	"ncc/go-mezon-bot/internal/constants"
+	radiostation "ncc/go-mezon-bot/internal/radio-station"
 	"ncc/go-mezon-bot/internal/rtc"
-	"strings"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/configs"
-	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
 
 type IBot interface {
-	StartCheckin()
-	RegisterCommand(cmd string, handler CommandHandler)
+	Start()
+	Setup() IBot
+
+	NCC8() IBot
+	Checkin() IBot
 }
 
 type Bot struct {
-	commands    map[string]CommandHandler
-	logger      *zap.Logger
-	signaling   mezonsdk.IWSConnection
+	cfg           *config.AppConfig
+	botCfg        config.BotConfig
+	commands      map[string]CommandHandler
+	logger        *zap.Logger
+	signalingDM   mezonsdk.IWSConnection
+	signalingClan mezonsdk.IWSConnection
+
+	// checkin
 	callService rtc.ICallService
-	checkinChan chan string
+
+	// ncc8
+	radioStationSignaling radiostation.IWSConnection
+	streamingService      rtc.IStreamingRTCConnection
 }
 
-func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
+func NewBot(cfg *config.AppConfig, botCfg config.BotConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
-	signaling, err := mezonsdk.NewWSConnection(&configs.Config{
+	signalingDM, err := mezonsdk.NewWSConnection(&configs.Config{
 		BasePath:     cfg.Domain,
-		ApiKey:       cfg.BotCheckin.ApiKey,
+		ApiKey:       botCfg.ApiKey,
 		Timeout:      15,
 		InsecureSkip: cfg.InsecureSkip,
 		UseSSL:       cfg.UseSSL,
 	}, "")
 	if err != nil {
-		logger.Error("[NewBot] ws signaling error", zap.Error(err))
+		logger.Error("[NewBot] ws signaling dm error", zap.Error(err))
 		return nil, err
 	}
 
-	// make call service
-	callService := rtc.NewCallService(cfg.BotCheckin.BotId, signaling, webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{constants.ICE},
-	})
+	signalingClan, err := mezonsdk.NewWSConnection(&configs.Config{
+		BasePath:     cfg.Domain,
+		ApiKey:       botCfg.ApiKey,
+		Timeout:      15,
+		InsecureSkip: cfg.InsecureSkip,
+		UseSSL:       cfg.UseSSL,
+	}, cfg.ClanId)
+	if err != nil {
+		logger.Error("[NewBot] ws signaling clan error", zap.Error(err))
+		return nil, err
+	}
 
 	return &Bot{
-		commands:    make(map[string]CommandHandler),
-		signaling:   signaling,
-		callService: callService,
-		logger:      logger,
-		checkinChan: make(chan string, 1000),
+		cfg:           cfg,
+		botCfg:        botCfg,
+		commands:      make(map[string]CommandHandler),
+		signalingDM:   signalingDM,
+		signalingClan: signalingClan,
+		logger:        logger,
 	}, nil
 }
 
-func (b *Bot) RegisterCommand(cmd string, handler CommandHandler) {
-	b.commands[cmd] = handler
-}
-
-func (b *Bot) handleCommand(input string) {
-	// TODO: ws channel message
-	parts := strings.Fields(input)
-	if len(parts) == 0 {
-		return
-	}
-
-	command := parts[0]
-	args := parts[1:]
-
-	if handler, exists := b.commands[command]; exists {
-		handler(command, args)
-	}
-	return
+func (b *Bot) Start() {
+	b.logger.Info("Bot is running...")
 }
