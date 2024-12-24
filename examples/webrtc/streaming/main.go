@@ -19,22 +19,25 @@ func main() {
 
 func Streaming() {
 
-	clanId := "3456110592"    // KOMU_2
-	channelId := "4311748608" // NCC8
-	userId := "4198400"       // longma350
-	displayName := "BOT350"   // longma350
+	clanId := "1779484504377790464"    // KOMU
+	channelId := "1838042805130235904" // NCC8-RADIO
+	userId := "1826067167154540544"    // KOMU
+	displayName := "KOMU"              // longma350
 	wsConn, err := radiostation.NewWSConnection(&configs.Config{
-		BasePath:     "stn.nccsoft.vn",
+		BasePath: "stn.mezon.vn", // prod
+		// BasePath: "stn.nccsoft.vn",	// dev
 		Timeout:      10,
 		InsecureSkip: true,
-		UseSSL:       true,
+		// UseSSL:       true,
+		UseSSL: false,
 	}, clanId, channelId, userId, displayName)
 	if err != nil {
 		panic(err)
 	}
 
 	// ffmpeg -i test.mp3 -c:a libopus -page_duration 20000 test.ogg;
-	filePath := "../../audio/ncc8_example.ogg"
+	// filePath := "../../audio/ncc8_example.ogg"
+	filePath := "../../audio/lk_thucuoi.ogg"
 	rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{

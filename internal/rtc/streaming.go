@@ -180,6 +180,9 @@ func (c *streamingRTCConn) onWebsocketEvent(event *radiostation.WsMsg) error {
 		}
 
 		return c.addICECandidate(i)
+
+	case "connect_publisher":
+		return c.sendPtt()
 	}
 
 	return nil
@@ -205,6 +208,21 @@ func (c *streamingRTCConn) sendOffer() error {
 		UserId:      c.userId,
 		DisplayName: c.displayName,
 		Value:       byteJson,
+	})
+}
+
+func (c *streamingRTCConn) sendPtt() error {
+	jsonData, _ := json.Marshal(map[string]interface{}{
+		"ChannelId": c.channelId,
+		"IsTalk":    true,
+	})
+	return c.ws.SendMessage(&radiostation.WsMsg{
+		Key:         "ptt_publisher",
+		ClanId:      c.clanId,
+		ChannelId:   c.channelId,
+		UserId:      c.userId,
+		DisplayName: c.displayName,
+		Value:       jsonData,
 	})
 }
 
