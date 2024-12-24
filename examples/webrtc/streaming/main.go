@@ -19,16 +19,13 @@ func main() {
 
 func Streaming() {
 
-	clanId := "1775732550744936448"    // KOMU
-	channelId := "1837040466697129984" // NCC8
-	userId := "1835944289075466240"    // komu
-	// clanId := "3456110592"    // KOMU_2
-	// channelId := "4311748608" // NCC8
-	// userId := "4198400"       // longma350
-	displayName := "KOMU" // longma350
+	clanId := "1779484504377790464"    // KOMU
+	channelId := "1838042805130235904" // NCC8-RADIO
+	userId := "1826067167154540544"    // KOMU
+	displayName := "KOMU"              // longma350
 	wsConn, err := radiostation.NewWSConnection(&configs.Config{
-		BasePath: "stn.nccsoft.vn",
-		// BasePath:     "localhost:8081",
+		BasePath: "stn.mezon.vn", // prod
+		// BasePath: "stn.nccsoft.vn",	// dev
 		Timeout:      10,
 		InsecureSkip: true,
 		// UseSSL:       true,

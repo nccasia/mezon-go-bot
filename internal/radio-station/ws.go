@@ -72,7 +72,8 @@ func NewWSConnection(c *configs.Config, clanId, channelId, userId, displayName s
 
 func (s *WSConnection) newWSConnection() error {
 	// TODO: authenticate token for ws
-	conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=komu&token=C5pfsrXJU2jRUzL", s.basePath), nil)
+	conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=komu&token=Cr-KpGIKlVzYPSU", s.basePath), nil) // prod
+	// conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=komu&token=C5pfsrXJU2jRUzL", s.basePath), nil) // dev
 	// conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws", s.basePath), nil)
 	if err != nil {
 		log.Println("WebSocket connection open err: ", err)
