@@ -2,7 +2,6 @@ package main
 
 import (
 	"ncc/go-mezon-bot/config"
-	"ncc/go-mezon-bot/internal/bot"
 	"ncc/go-mezon-bot/internal/logger"
 	"net/http"
 
@@ -15,6 +14,8 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"status": "ok"}`))
 }
 
+var bot IBot
+
 func main() {
 	// Load Config
 	cfg := config.LoadConfig()
@@ -24,18 +25,16 @@ func main() {
 	defer log.Sync() // Flush log
 
 	// Start Bot Checkin
-	botCheckin, err := bot.NewBot(cfg, cfg.BotCheckin, log)
+	var err error
+	bot, err = NewBot(cfg, log)
 	if err != nil {
 		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
 	}
-	botCheckin.Checkin().Start()
 
-	// Start Bot Ncc8
-	botNcc8, err := bot.NewBot(cfg, cfg.BotNcc8, log)
-	if err != nil {
-		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
-	}
-	botNcc8.Setup().NCC8().Start()
+	// registry all command here
+	bot.RegisterCmd("*ncc8", Ncc8Handler)
+
+	bot.Start()
 
 	// Register the health check endpoint
 	http.HandleFunc("/health", healthCheckHandler)
