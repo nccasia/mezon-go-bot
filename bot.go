@@ -19,12 +19,10 @@ import (
 type IBot interface {
 	Start()
 	Stop()
-
 	RegisterCmd(prefix string, cmdHandler CommandHandler)
-
 	Logger() *zap.Logger
-
 	Config() *config.AppConfig
+	MezonClient() *mezonsdk.Client
 }
 
 type Bot struct {
@@ -35,6 +33,11 @@ type Bot struct {
 
 	// checkin
 	callService rtc.ICallService
+}
+
+// MezonClient implements IBot.
+func (b *Bot) MezonClient() *mezonsdk.Client {
+	return b.mzn
 }
 
 // Logger implements IBot.
