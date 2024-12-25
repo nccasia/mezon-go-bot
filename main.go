@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ncc/go-mezon-bot/config"
-	"ncc/go-mezon-bot/internal/logger"
+	"mezon-go-bot/config"
+	"mezon-go-bot/internal/logger"
 	"net/http"
 
 	"go.uber.org/zap"

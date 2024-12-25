@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"ncc/go-mezon-bot/pkg/responses"
+	"mezon-go-bot/pkg/responses"
 	"net/http"
 	"strings"
 	"time"

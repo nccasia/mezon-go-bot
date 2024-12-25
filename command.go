@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"ncc/go-mezon-bot/internal/constants"
-	radiostation "ncc/go-mezon-bot/internal/radio-station"
-	"ncc/go-mezon-bot/internal/rtc"
-	"ncc/go-mezon-bot/pkg/clients"
+	"mezon-go-bot/internal/constants"
+	radiostation "mezon-go-bot/internal/radio-station"
+	"mezon-go-bot/internal/rtc"
+	"mezon-go-bot/pkg/clients"
 
 	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/pion/webrtc/v4"

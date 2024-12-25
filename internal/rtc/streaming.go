@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-
-	radiostation "ncc/go-mezon-bot/internal/radio-station"
+	radiostation "mezon-go-bot/internal/radio-station"
 
 	"os"
 	"sync"
