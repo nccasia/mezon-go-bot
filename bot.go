@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"ncc/go-mezon-bot/config"
+	"ncc/go-mezon-bot/internal/constants"
 	"ncc/go-mezon-bot/internal/helper"
 	"ncc/go-mezon-bot/internal/rtc"
 	"ncc/go-mezon-bot/internal/websocket"
@@ -11,6 +12,7 @@ import (
 	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/rtapi"
+	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
 
@@ -47,7 +49,11 @@ func (b *Bot) Config() *config.AppConfig {
 
 // RegisterCmd implements IBot.
 func (b *Bot) RegisterCmd(prefix string, cmdHandler CommandHandler) {
-	panic("unimplemented")
+	if b.commands == nil {
+		return
+	}
+
+	b.commands[prefix] = cmdHandler
 }
 
 // Stop implements IBot.
@@ -59,7 +65,7 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
 	mzClient, err := mezonsdk.NewWSConnection(&configs.Config{
-		BasePath:     cfg.Domain,
+		BasePath:     cfg.MznDomain,
 		ApiKey:       cfg.ApiKey,
 		Timeout:      15,
 		InsecureSkip: cfg.InsecureSkip,
@@ -69,6 +75,16 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 		logger.Error("[NewBot] ws signaling dm error", zap.Error(err))
 		return nil, err
 	}
+
+	callService := rtc.NewCallService(cfg.BotId, mzClient, webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
+	})
+	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
+	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
+	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
+	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
+	mzClient.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
 
 	return &Bot{
 		cfg:      cfg,

@@ -14,13 +14,13 @@ import (
 var Cfg = &AppConfig{}
 
 type AppConfig struct {
-	Domain       string    `json:"domain" mapstructure:"domain"`
-	StnDomain    string    `json:"stn_domain" mapstructure:"stn_domain"`
-	ApiKey       string    `json:"api_key" mapstructure:"api_key"`
-	BotId        string    `json:"bot_id" mapstructure:"bot_id"`
-	InsecureSkip bool      `json:"insecure_skip" mapstructure:"insecure_skip"`
-	UseSSL       bool      `json:"use_ssl" mapstructure:"use_ssl"`
-	LogFile      string    `json:"log_file" mapstructure:"log_file"`
+	MznDomain    string `json:"domain" mapstructure:"domain"`
+	StnDomain    string `json:"stn_domain" mapstructure:"stn_domain"`
+	ApiKey       string `json:"api_key" mapstructure:"api_key"`
+	BotId        string `json:"bot_id" mapstructure:"bot_id"`
+	InsecureSkip bool   `json:"insecure_skip" mapstructure:"insecure_skip"`
+	UseSSL       bool   `json:"use_ssl" mapstructure:"use_ssl"`
+	LogFile      string `json:"log_file" mapstructure:"log_file"`
 }
 
 func LoadConfig(cPath ...string) *AppConfig {
