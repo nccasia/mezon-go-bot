@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	radiostation "mezon-go-bot/internal/radio-station"
 	"mezon-go-bot/internal/rtc"
@@ -13,21 +15,27 @@ import (
 )
 
 func Ncc8Handler(command string, args []string) error {
-	if args[0] == constants.NCC8_ARG_PLAY {
-		wsConn, err := radiostation.NewWSConnection(&configs.Config{
-			BasePath:     bot.Config().StnDomain,
-			Timeout:      15,
-			InsecureSkip: bot.Config().InsecureSkip,
-			UseSSL:       bot.Config().UseSSL,
-		}, "clanId", "channelId", bot.Config().BotId, "NCC8")
-		if err != nil {
-			bot.Logger().Error("[ncc8] radiostation new ws signaling error", zap.Error(err))
-			return err
-		}
+	// Load Config
+	cfg := config.LoadConfig()
+
+	wsConn, err := radiostation.NewWSConnection(&configs.Config{
+		BasePath:     bot.Config().StnDomain,
+		Timeout:      15,
+		InsecureSkip: bot.Config().InsecureSkip,
+		UseSSL:       false,
+	}, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, cfg.BotName, cfg.Token)
+	if err != nil {
+		fmt.Println("[ncc8] radiostation new ws signaling error:", err)
+		bot.Logger().Error("[ncc8] radiostation new ws signaling error", zap.Error(err))
+		return err
+	}
+
+	switch args[0] {
+	case constants.NCC8_ARG_PLAY:
 
 		rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
 			ICEServers: []webrtc.ICEServer{constants.ICE_GOOGLE},
-		}, wsConn, "clanId", "channelId", bot.Config().BotId, "NCC8")
+		}, wsConn, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "NCC8")
 		if err != nil {
 			bot.Logger().Error("[ncc8] new streaming rtc connection error", zap.Error(err))
 			return err
@@ -39,6 +47,25 @@ func Ncc8Handler(command string, args []string) error {
 		if err != nil {
 			bot.Logger().Error("[ncc8] send audio file error", zap.Error(err))
 			return err
+		}
+
+	case constants.NCC8_ARG_STOP:
+		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
+		if !ok {
+			fmt.Println("Connection not found for channelId:", cfg.ChannelId)
+			return err
+		}
+
+		if conn, ok := rtcConn.(*rtc.StreamingRTCConn); ok {
+			conn.Close(cfg.ChannelId)
+			fmt.Println("Connection closed for channelId:", cfg.ChannelId)
+		} else {
+			fmt.Println("Error casting connection")
+		}
+
+		_, ok = rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
+		if !ok {
+			fmt.Println("Channel ID successfully removed from the map:", cfg.ChannelId)
 		}
 	}
 

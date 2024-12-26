@@ -17,16 +17,16 @@ func recvDefaultHandler(e *WsMsg) error {
 }
 
 type WSConnection struct {
-	conn        *websocket.Conn
-	dialer      *websocket.Dialer
-	basePath    string
-	token       string
-	clanId      string
-	channelId   string
-	userId      string
-	displayName string
-	mu          sync.Mutex
-	onMessage   func(*WsMsg) error
+	conn      *websocket.Conn
+	dialer    *websocket.Dialer
+	basePath  string
+	token     string
+	clanId    string
+	channelId string
+	userId    string
+	username  string
+	mu        sync.Mutex
+	onMessage func(*WsMsg) error
 }
 
 type IWSConnection interface {
@@ -36,7 +36,7 @@ type IWSConnection interface {
 
 // TODO: implement (TODO) for IWSConnection
 
-func NewWSConnection(c *configs.Config, clanId, channelId, userId, displayName string) (IWSConnection, error) {
+func NewWSConnection(c *configs.Config, clanId, channelId, userId, username, token string) (IWSConnection, error) {
 
 	// TODO: authenticate token for ws
 	// token, err := getAuthenticate(c)
@@ -45,7 +45,8 @@ func NewWSConnection(c *configs.Config, clanId, channelId, userId, displayName s
 	// }
 
 	client := &WSConnection{
-		token:    "",
+		username: username,
+		token:    token,
 		basePath: utils.GetBasePath("wss", c.BasePath, c.UseSSL),
 		// basePath:  utils.GetBasePath("ws", c.BasePath, c.UseSSL),
 		clanId:    clanId,
@@ -71,10 +72,9 @@ func NewWSConnection(c *configs.Config, clanId, channelId, userId, displayName s
 }
 
 func (s *WSConnection) newWSConnection() error {
+
 	// TODO: authenticate token for ws
-	conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=komu&token=Cr-KpGIKlVzYPSU", s.basePath), nil) // prod
-	// conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=komu&token=C5pfsrXJU2jRUzL", s.basePath), nil) // dev
-	// conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws", s.basePath), nil)
+	conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=%s&token=%s", s.basePath, s.username, s.token), nil)
 	if err != nil {
 		log.Println("WebSocket connection open err: ", err)
 		return err

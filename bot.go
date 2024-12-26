@@ -106,23 +106,37 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 func (b *Bot) Start() {
 	socket := b.mzn.Socket
 	socket.SetOnChannelMessage(func(e *rtapi.Envelope) error {
-		return b.handleCommand(e.GetChannelMessage())
+		go func() {
+			err := b.handleCommand(e.GetChannelMessage())
+			if err != nil {
+				b.logger.Error("Error handling command", zap.Error(err))
+			}
+		}()
+		return nil
 	})
 }
 
 type CommandHandler func(command string, args []string) error
 
 func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
+	content := msg.GetContent()
+	if len(content) == 0 || len(content) >= 64 || content == "{}" {
+		return nil
+	}
 
 	var msgContent *websocket.MsgContent
-	if err := json.Unmarshal([]byte(msg.GetContent()), &msgContent); err != nil || msgContent == nil {
+	if err := json.Unmarshal([]byte(content), &msgContent); err != nil {
 		return err
 	}
 
-	command, args := helper.ExtractMessage(msgContent.Content)
-	b.logger.Debug("[ExtractMessage]", zap.String("command", command), zap.Any("args", args))
-	if handler, exists := b.commands[command]; exists {
-		return handler(command, args)
+	if msgContent.Content != "" {
+		command, args := helper.ExtractMessage(msgContent.Content)
+		b.logger.Debug("[ExtractMessage]", zap.String("command", command), zap.Any("args", args))
+
+		if handler, exists := b.commands[command]; exists {
+			return handler(command, args)
+		}
 	}
+
 	return nil
 }
