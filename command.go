@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	radiostation "mezon-go-bot/internal/radio-station"
@@ -25,7 +24,6 @@ func Ncc8Handler(command string, args []string) error {
 		UseSSL:       false,
 	}, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, cfg.BotName, cfg.Token)
 	if err != nil {
-		fmt.Println("[ncc8] radiostation new ws signaling error:", err)
 		bot.Logger().Error("[ncc8] radiostation new ws signaling error", zap.Error(err))
 		return err
 	}
@@ -52,21 +50,22 @@ func Ncc8Handler(command string, args []string) error {
 	case constants.NCC8_ARG_STOP:
 		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
 		if !ok {
-			fmt.Println("Connection not found for channelId:", cfg.ChannelId)
+			bot.Logger().Error("Connection not found for channelId", zap.String("channelId", cfg.ChannelId))
 			return err
 		}
 
 		if conn, ok := rtcConn.(*rtc.StreamingRTCConn); ok {
 			conn.Close(cfg.ChannelId)
-			fmt.Println("Connection closed for channelId:", cfg.ChannelId)
+			bot.Logger().Info("Connection closed for channelId", zap.String("channelId", cfg.ChannelId))
 		} else {
-			fmt.Println("Error casting connection")
+			bot.Logger().Error("Error casting connection", zap.String("channelId", cfg.ChannelId))
 		}
 
 		_, ok = rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
 		if !ok {
-			fmt.Println("Channel ID successfully removed from the map:", cfg.ChannelId)
+			bot.Logger().Info("Channel ID successfully removed from the map", zap.String("channelId", cfg.ChannelId))
 		}
+
 	}
 
 	return nil

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/logger"
@@ -45,11 +44,9 @@ func main() {
 	port := "8080"
 
 	log.Info("Starting server on port", zap.Any("port", port))
-	fmt.Println("Starting server on port:", port)
 
 	// Start the HTTP server
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("Error starting server", zap.Error(err))
-		fmt.Println("Error starting server", err)
 	}
 }
