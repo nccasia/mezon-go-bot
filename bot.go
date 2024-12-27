@@ -79,22 +79,6 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 		return nil, err
 	}
 
-	socket, err := mzClient.CreateSocket()
-	if err != nil {
-		logger.Error("[NewBot] can not create socket", zap.Error(err))
-		return nil, err
-	}
-
-	callService := rtc.NewCallService(cfg.BotId, socket, webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
-	})
-	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
-	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
-	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
-	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
-	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
-	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
-
 	return &Bot{
 		cfg:      cfg,
 		commands: make(map[string]CommandHandler),
@@ -104,7 +88,11 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 }
 
 func (b *Bot) Start() {
-	socket := b.mzn.Socket
+	socket, err := b.mzn.CreateSocket()
+	if err != nil {
+		b.logger.Error("[NewBot] can not create socket", zap.Error(err))
+		return
+	}
 	socket.SetOnChannelMessage(func(e *rtapi.Envelope) error {
 		go func() {
 			err := b.handleCommand(e.GetChannelMessage())
@@ -114,6 +102,16 @@ func (b *Bot) Start() {
 		}()
 		return nil
 	})
+
+	callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
+	})
+	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
+	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
+	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
+	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
+	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 }
 
 type CommandHandler func(command string, args []string) error
