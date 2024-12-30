@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ncc/go-mezon-bot/config"
-	"ncc/go-mezon-bot/internal/bot"
-	"ncc/go-mezon-bot/internal/logger"
+	"mezon-go-bot/config"
+	"mezon-go-bot/internal/constants"
+	"mezon-go-bot/internal/logger"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -15,6 +15,8 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"status": "ok"}`))
 }
 
+var bot IBot
+
 func main() {
 	// Load Config
 	cfg := config.LoadConfig()
@@ -24,11 +26,16 @@ func main() {
 	defer log.Sync() // Flush log
 
 	// Start Bot Checkin
-	b, err := bot.NewBot(cfg, log)
+	var err error
+	bot, err = NewBot(cfg, log)
 	if err != nil {
-		log.Fatal("Failed to initialize bot", zap.Error(err))
+		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
 	}
-	b.StartCheckin()
+
+	// registry all command here
+	bot.RegisterCmd(constants.NCC8_COMMAND, Ncc8Handler)
+
+	bot.Start()
 
 	// Register the health check endpoint
 	http.HandleFunc("/health", healthCheckHandler)

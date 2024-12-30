@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-
-	radiostation "ncc/go-mezon-bot/internal/radio-station"
+	radiostation "mezon-go-bot/internal/radio-station"
 
 	"os"
 	"sync"
@@ -19,10 +18,10 @@ import (
 )
 
 var (
-	mapStreamingRtcConn sync.Map // map[channelId]*RTCConnection
+	MapStreamingRtcConn sync.Map // map[channelId]*RTCConnection
 )
 
-type streamingRTCConn struct {
+type StreamingRTCConn struct {
 	peer *webrtc.PeerConnection
 	ws   radiostation.IWSConnection
 
@@ -80,7 +79,7 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 	}()
 
 	// save to store
-	rtcConnection := &streamingRTCConn{
+	rtcConnection := &StreamingRTCConn{
 		peer:        peerConnection,
 		ws:          wsConn,
 		clanId:      clanId,
@@ -92,7 +91,7 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 
 	// ws receive message handler ( on event )
 	wsConn.SetOnMessage(rtcConnection.onWebsocketEvent)
-	mapStreamingRtcConn.Store(channelId, rtcConnection)
+	MapStreamingRtcConn.Store(channelId, rtcConnection)
 
 	peerConnection.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
 		log.Printf("Connection State has changed %s \n", state.String())
@@ -110,20 +109,20 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 				DisplayName: displayName,
 			})
 		case webrtc.ICEConnectionStateClosed:
-			rtcConn, ok := mapStreamingRtcConn.Load(channelId)
+			rtcConn, ok := MapStreamingRtcConn.Load(channelId)
 			if !ok {
 				return
 			}
 
-			if rtcConn.(*streamingRTCConn).peer == nil {
+			if rtcConn.(*StreamingRTCConn).peer == nil {
 				return
 			}
 
-			if rtcConn.(*streamingRTCConn).peer.ConnectionState() != webrtc.PeerConnectionStateClosed {
-				rtcConn.(*streamingRTCConn).peer.Close()
+			if rtcConn.(*StreamingRTCConn).peer.ConnectionState() != webrtc.PeerConnectionStateClosed {
+				rtcConn.(*StreamingRTCConn).peer.Close()
 			}
 
-			mapStreamingRtcConn.Delete(channelId)
+			MapStreamingRtcConn.Delete(channelId)
 		}
 	})
 	peerConnection.OnICECandidate(func(i *webrtc.ICECandidate) {
@@ -136,24 +135,24 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 	return rtcConnection, nil
 }
 
-func (c *streamingRTCConn) Close(channelId string) {
-	rtcConn, ok := mapStreamingRtcConn.Load(channelId)
+func (c *StreamingRTCConn) Close(channelId string) {
+	rtcConn, ok := MapStreamingRtcConn.Load(channelId)
 	if !ok {
 		return
 	}
 
-	if rtcConn.(*streamingRTCConn).peer == nil {
+	if rtcConn.(*StreamingRTCConn).peer == nil {
 		return
 	}
 
-	if rtcConn.(*streamingRTCConn).peer.ConnectionState() != webrtc.PeerConnectionStateClosed {
-		rtcConn.(*streamingRTCConn).peer.Close()
+	if rtcConn.(*StreamingRTCConn).peer.ConnectionState() != webrtc.PeerConnectionStateClosed {
+		rtcConn.(*StreamingRTCConn).peer.Close()
 	}
 
-	mapStreamingRtcConn.Delete(channelId)
+	MapStreamingRtcConn.Delete(channelId)
 }
 
-func (c *streamingRTCConn) onWebsocketEvent(event *radiostation.WsMsg) error {
+func (c *StreamingRTCConn) onWebsocketEvent(event *radiostation.WsMsg) error {
 
 	// TODO: fix hardcode
 	switch event.Key {
@@ -180,12 +179,15 @@ func (c *streamingRTCConn) onWebsocketEvent(event *radiostation.WsMsg) error {
 		}
 
 		return c.addICECandidate(i)
+
+	case "connect_publisher":
+		return c.sendPtt()
 	}
 
 	return nil
 }
 
-func (c *streamingRTCConn) sendOffer() error {
+func (c *StreamingRTCConn) sendOffer() error {
 	offer, err := c.peer.CreateOffer(nil)
 	if err != nil {
 		return err
@@ -208,7 +210,22 @@ func (c *streamingRTCConn) sendOffer() error {
 	})
 }
 
-func (c *streamingRTCConn) onICECandidate(i *webrtc.ICECandidate, clanId, channelId, userId, displayName string) error {
+func (c *StreamingRTCConn) sendPtt() error {
+	jsonData, _ := json.Marshal(map[string]interface{}{
+		"ChannelId": c.channelId,
+		"IsTalk":    true,
+	})
+	return c.ws.SendMessage(&radiostation.WsMsg{
+		Key:         "ptt_publisher",
+		ClanId:      c.clanId,
+		ChannelId:   c.channelId,
+		UserId:      c.userId,
+		DisplayName: c.displayName,
+		Value:       jsonData,
+	})
+}
+
+func (c *StreamingRTCConn) onICECandidate(i *webrtc.ICECandidate, clanId, channelId, userId, displayName string) error {
 	if i == nil {
 		return nil
 	}
@@ -229,11 +246,11 @@ func (c *streamingRTCConn) onICECandidate(i *webrtc.ICECandidate, clanId, channe
 	})
 }
 
-func (c *streamingRTCConn) addICECandidate(i webrtc.ICECandidateInit) error {
+func (c *StreamingRTCConn) addICECandidate(i webrtc.ICECandidateInit) error {
 	return c.peer.AddICECandidate(i)
 }
 
-func (c *streamingRTCConn) SendAudioTrack(filePath string) error {
+func (c *StreamingRTCConn) SendAudioTrack(filePath string) error {
 
 	// Open a OGG file and start reading using our OGGReader
 	file, oggErr := os.Open(filePath)

@@ -1,10 +1,10 @@
-module ncc/go-mezon-bot
+module mezon-go-bot
 
 go 1.23.4
 
 require (
 	github.com/gorilla/websocket v1.5.3
-	github.com/nccasia/mezon-go-sdk v0.0.13
+	github.com/nccasia/mezon-go-sdk v0.0.21
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
 	github.com/pion/webrtc/v4 v4.0.5
