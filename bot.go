@@ -79,22 +79,6 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 		return nil, err
 	}
 
-	socket, err := mzClient.CreateSocket()
-	if err != nil {
-		logger.Error("[NewBot] can not create socket", zap.Error(err))
-		return nil, err
-	}
-
-	callService := rtc.NewCallService(cfg.BotId, socket, webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
-	})
-	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
-	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
-	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
-	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
-	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
-	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
-
 	return &Bot{
 		cfg:      cfg,
 		commands: make(map[string]CommandHandler),
@@ -104,25 +88,53 @@ func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 }
 
 func (b *Bot) Start() {
-	socket := b.mzn.Socket
+	socket, err := b.mzn.CreateSocket()
+	if err != nil {
+		b.logger.Error("[NewBot] can not create socket", zap.Error(err))
+		return
+	}
 	socket.SetOnChannelMessage(func(e *rtapi.Envelope) error {
-		return b.handleCommand(e.GetChannelMessage())
+		go func() {
+			err := b.handleCommand(e.GetChannelMessage())
+			if err != nil {
+				b.logger.Error("Error handling command", zap.Error(err))
+			}
+		}()
+		return nil
 	})
+
+	callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
+	})
+	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
+	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
+	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
+	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
+	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 }
 
 type CommandHandler func(command string, args []string) error
 
 func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
+	content := msg.GetContent()
+	if len(content) == 0 || len(content) >= 64 || content == "{}" {
+		return nil
+	}
 
 	var msgContent *websocket.MsgContent
-	if err := json.Unmarshal([]byte(msg.GetContent()), &msgContent); err != nil || msgContent == nil {
+	if err := json.Unmarshal([]byte(content), &msgContent); err != nil {
 		return err
 	}
 
-	command, args := helper.ExtractMessage(msgContent.Content)
-	b.logger.Debug("[ExtractMessage]", zap.String("command", command), zap.Any("args", args))
-	if handler, exists := b.commands[command]; exists {
-		return handler(command, args)
+	if msgContent.Content != "" {
+		command, args := helper.ExtractMessage(msgContent.Content)
+		b.logger.Debug("[ExtractMessage]", zap.String("command", command), zap.Any("args", args))
+
+		if handler, exists := b.commands[command]; exists {
+			return handler(command, args)
+		}
 	}
+
 	return nil
 }

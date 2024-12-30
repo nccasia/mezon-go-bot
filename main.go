@@ -2,6 +2,7 @@ package main
 
 import (
 	"mezon-go-bot/config"
+	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/logger"
 	"net/http"
 
@@ -32,7 +33,7 @@ func main() {
 	}
 
 	// registry all command here
-	bot.RegisterCmd("*ncc8", Ncc8Handler)
+	bot.RegisterCmd(constants.NCC8_COMMAND, Ncc8Handler)
 
 	bot.Start()
 
