@@ -1,19 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	radiostation "mezon-go-bot/internal/radio-station"
 	"mezon-go-bot/internal/rtc"
 	"mezon-go-bot/pkg/clients"
+	"net/http"
+	"strconv"
+
+	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 
 	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
 
-func Ncc8Handler(command string, args []string) error {
+func Ncc8Handler(command string, args []string, message *api.ChannelMessage) error {
 	// Load Config
 	cfg := config.LoadConfig()
 
@@ -30,24 +36,57 @@ func Ncc8Handler(command string, args []string) error {
 
 	switch args[0] {
 	case constants.NCC8_ARG_PLAY:
+		if len(args) > 1 {
+			var content string
+			episodeID, err := strconv.Atoi(args[1])
+			if err != nil {
+				content = fmt.Sprintf("Invalid episode ID: %v", err)
+				bot.Logger().Error("[ncc8] args[1] is not a valid number:", zap.Error(err))
+				return nil
+			}
 
-		rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
-			ICEServers: []webrtc.ICEServer{constants.ICE_GOOGLE},
-		}, wsConn, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "NCC8")
-		if err != nil {
-			bot.Logger().Error("[ncc8] new streaming rtc connection error", zap.Error(err))
-			return err
-		}
+			rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
+				ICEServers: []webrtc.ICEServer{constants.ICE_GOOGLE},
+			}, wsConn, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "NCC8")
+			if err != nil {
+				bot.Logger().Error("[ncc8] new streaming rtc connection error", zap.Error(err))
+				return err
+			}
 
-		// TODO: get mp3 by args[1]
-		// TODO: ffmpeg convert mp3 to ogg: ffmpeg -i test.mp3 -c:a libopus -page_duration 20000 test.ogg
-		err = rtcConn.SendAudioTrack("audio/ncc8.ogg")
-		if err != nil {
-			bot.Logger().Error("[ncc8] send audio file error", zap.Error(err))
-			return err
+			// TODO: get mp3 by args[1]
+			// TODO: ffmpeg convert mp3 to ogg: ffmpeg -i test.mp3 -c:a libopus -page_duration 20000 test.ogg
+
+			apiURL := fmt.Sprintf("http://172.16.100.114:3000/ncc8/episode/%d", episodeID)
+
+			resp, err := http.Get(apiURL)
+			if err != nil {
+				bot.Logger().Error("[ncc8] failed to fetch episode URL", zap.Error(err))
+				content = fmt.Sprintf("Failed to fetch episode URL: %v", err)
+				return err
+			}
+			defer resp.Body.Close()
+
+			var response struct {
+				URL string `json:"url"`
+			}
+
+			if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+				bot.Logger().Error("[ncc8] failed to parse response", zap.Error(err))
+				return err
+			}
+
+			content = fmt.Sprintf("{\"t\":\"NCC8 is broadcast on #\",\"hg\":[{\"channelid\":\"%s\",\"s\":21,\"e\":31}]}", cfg.ChannelId)
+			bot.SendMessage(message, content)
+			// err = rtcConn.SendAudioTrack(response.URL)
+			err = rtcConn.SendAudioTrack("audio/lk_thucuoi.ogg")
+			if err != nil {
+				bot.Logger().Error("[ncc8] send audio file error", zap.Error(err))
+				return err
+			}
 		}
 
 	case constants.NCC8_ARG_STOP:
+		var content string
 		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
 		if !ok {
 			bot.Logger().Error("Connection not found for channelId", zap.String("channelId", cfg.ChannelId))
@@ -55,6 +94,8 @@ func Ncc8Handler(command string, args []string) error {
 		}
 
 		if conn, ok := rtcConn.(*rtc.StreamingRTCConn); ok {
+			content = "Broadcast stopped successfully."
+			bot.SendMessage(message, content)
 			conn.Close(cfg.ChannelId)
 			bot.Logger().Info("Connection closed for channelId", zap.String("channelId", cfg.ChannelId))
 		} else {
@@ -66,6 +107,9 @@ func Ncc8Handler(command string, args []string) error {
 			bot.Logger().Info("Channel ID successfully removed from the map", zap.String("channelId", cfg.ChannelId))
 		}
 
+	default:
+		content := fmt.Sprintf("Unknown command: %s. Supported commands: play, stop.", args[0])
+		bot.SendMessage(message, content)
 	}
 
 	return nil
