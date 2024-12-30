@@ -1,4 +1,4 @@
-package radiostation
+package ws
 
 import (
 	"crypto/tls"

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
-	radiostation "mezon-go-bot/internal/radio-station"
 	"mezon-go-bot/internal/rtc"
+	"mezon-go-bot/internal/ws"
 	"mezon-go-bot/pkg/clients"
 
 	"github.com/nccasia/mezon-go-sdk/configs"
@@ -17,7 +17,7 @@ func Ncc8Handler(command string, args []string) error {
 	// Load Config
 	cfg := config.LoadConfig()
 
-	wsConn, err := radiostation.NewWSConnection(&configs.Config{
+	wsConn, err := ws.NewWSConnection(&configs.Config{
 		BasePath:     bot.Config().StnDomain,
 		Timeout:      15,
 		InsecureSkip: bot.Config().InsecureSkip,
@@ -30,7 +30,6 @@ func Ncc8Handler(command string, args []string) error {
 
 	switch args[0] {
 	case constants.NCC8_ARG_PLAY:
-
 		rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
 			ICEServers: []webrtc.ICEServer{constants.ICE_GOOGLE},
 		}, wsConn, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "NCC8")
@@ -39,32 +38,10 @@ func Ncc8Handler(command string, args []string) error {
 			return err
 		}
 
-		// TODO: get mp3 by args[1]
-		// TODO: ffmpeg convert mp3 to ogg: ffmpeg -i test.mp3 -c:a libopus -page_duration 20000 test.ogg
-		err = rtcConn.SendAudioTrack("audio/ncc8.ogg")
-		if err != nil {
-			bot.Logger().Error("[ncc8] send audio file error", zap.Error(err))
-			return err
-		}
+		rtcConn.Start()
 
 	case constants.NCC8_ARG_STOP:
-		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
-		if !ok {
-			bot.Logger().Error("Connection not found for channelId", zap.String("channelId", cfg.ChannelId))
-			return err
-		}
-
-		if conn, ok := rtcConn.(*rtc.StreamingRTCConn); ok {
-			conn.Close(cfg.ChannelId)
-			bot.Logger().Info("Connection closed for channelId", zap.String("channelId", cfg.ChannelId))
-		} else {
-			bot.Logger().Error("Error casting connection", zap.String("channelId", cfg.ChannelId))
-		}
-
-		_, ok = rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
-		if !ok {
-			bot.Logger().Info("Channel ID successfully removed from the map", zap.String("channelId", cfg.ChannelId))
-		}
+		//rtcConn.Stop()
 
 	}
 

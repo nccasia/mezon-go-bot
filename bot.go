@@ -6,7 +6,7 @@ import (
 	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/helper"
 	"mezon-go-bot/internal/rtc"
-	"mezon-go-bot/internal/websocket"
+	"mezon-go-bot/internal/ws"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/configs"
@@ -122,7 +122,7 @@ func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 		return nil
 	}
 
-	var msgContent *websocket.MsgContent
+	var msgContent *ws.MsgContent
 	if err := json.Unmarshal([]byte(content), &msgContent); err != nil {
 		return err
 	}

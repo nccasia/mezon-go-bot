@@ -3,10 +3,10 @@ package rtc
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
-	radiostation "mezon-go-bot/internal/radio-station"
+	"mezon-go-bot/internal/gst"
+	"mezon-go-bot/internal/ws"
 
 	"os"
 	"sync"
@@ -23,60 +23,54 @@ var (
 
 type StreamingRTCConn struct {
 	peer *webrtc.PeerConnection
-	ws   radiostation.IWSConnection
+	ws   ws.IWSConnection
 
 	clanId      string
 	channelId   string
 	userId      string
 	displayName string
 
-	// TODO: streaming video (#rapchieuphim)
-	// videoTrack *webrtc.TrackLocalStaticRTP
 	audioTrack *webrtc.TrackLocalStaticSample
+	videoTrack *webrtc.TrackLocalStaticSample
+	pipeline   *gst.Pipeline
+}
+
+// Stop implements IStreamingRTCConnection.
+func (c *StreamingRTCConn) Stop() {
+	panic("unimplemented")
 }
 
 type IStreamingRTCConnection interface {
 	SendAudioTrack(filePath string) error
 	Close(channelId string)
+	Start()
+	Stop()
 }
 
-func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.IWSConnection, clanId, channelId, userId, displayName string) (IStreamingRTCConnection, error) {
+func NewStreamingRTCConnection(config webrtc.Configuration, wsConn ws.IWSConnection, clanId, channelId, userId, displayName string) (IStreamingRTCConnection, error) {
+	containerPath := ""
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
 		return nil, err
 	}
 
-	// // Create a video track
-	// videoTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}, fmt.Sprintf("video_vp8_%s", channelId), fmt.Sprintf("video_vp8_%s", channelId))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// _, err = peerConnection.AddTrack(videoTrack)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// Create a audio track
-	audioTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus}, fmt.Sprintf("audio_opus_%s", channelId), fmt.Sprintf("audio_opus_%s", channelId))
+	videoTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "video/h264"}, "synced", "video")
 	if err != nil {
-		return nil, err
-	}
-	rtpSender, err := peerConnection.AddTrack(audioTrack)
-	if err != nil {
-		return nil, err
+		log.Fatal("play error")
 	}
 
-	// Read incoming RTCP packets
-	// Before these packets are returned they are processed by interceptors. For things
-	// like NACK this needs to be called.
-	go func() {
-		rtcpBuf := make([]byte, 1500)
-		for {
-			if _, _, rtcpErr := rtpSender.Read(rtcpBuf); rtcpErr != nil {
-				return
-			}
-		}
-	}()
+	audioTrack, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: "audio/opus"}, "synced", "audio")
+	if err != nil {
+		log.Fatal("play error")
+	}
+
+	if _, err := peerConnection.AddTrack(audioTrack); err != nil {
+		log.Fatal(err)
+	} else if _, err = peerConnection.AddTrack(videoTrack); err != nil {
+		log.Fatal(err)
+	}
+
+	pipeline := gst.CreatePipeline(containerPath, audioTrack, videoTrack)
 
 	// save to store
 	rtcConnection := &StreamingRTCConn{
@@ -87,6 +81,8 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 		userId:      userId,
 		displayName: displayName,
 		audioTrack:  audioTrack,
+		videoTrack:  videoTrack,
+		pipeline:    pipeline,
 	}
 
 	// ws receive message handler ( on event )
@@ -100,7 +96,7 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 		case webrtc.ICEConnectionStateConnected:
 			// TODO: event ice connected
 			jsonData, _ := json.Marshal(map[string]string{"ChannelId": channelId})
-			wsConn.SendMessage(&radiostation.WsMsg{
+			wsConn.SendMessage(&ws.WsMsg{
 				ClanId:      clanId,
 				ChannelId:   channelId,
 				Key:         "connect_publisher",
@@ -135,6 +131,10 @@ func NewStreamingRTCConnection(config webrtc.Configuration, wsConn radiostation.
 	return rtcConnection, nil
 }
 
+func (c *StreamingRTCConn) Start() {
+	c.pipeline.Start()
+}
+
 func (c *StreamingRTCConn) Close(channelId string) {
 	rtcConn, ok := MapStreamingRtcConn.Load(channelId)
 	if !ok {
@@ -152,7 +152,7 @@ func (c *StreamingRTCConn) Close(channelId string) {
 	MapStreamingRtcConn.Delete(channelId)
 }
 
-func (c *StreamingRTCConn) onWebsocketEvent(event *radiostation.WsMsg) error {
+func (c *StreamingRTCConn) onWebsocketEvent(event *ws.WsMsg) error {
 
 	// TODO: fix hardcode
 	switch event.Key {
@@ -200,7 +200,7 @@ func (c *StreamingRTCConn) sendOffer() error {
 	// dataEnc, _ := utils.GzipCompress(string(byteJson))
 
 	// send socket signaling, gzip compress data
-	return c.ws.SendMessage(&radiostation.WsMsg{
+	return c.ws.SendMessage(&ws.WsMsg{
 		Key:         "session_publisher",
 		ClanId:      c.clanId,
 		ChannelId:   c.channelId,
@@ -215,7 +215,7 @@ func (c *StreamingRTCConn) sendPtt() error {
 		"ChannelId": c.channelId,
 		"IsTalk":    true,
 	})
-	return c.ws.SendMessage(&radiostation.WsMsg{
+	return c.ws.SendMessage(&ws.WsMsg{
 		Key:         "ptt_publisher",
 		ClanId:      c.clanId,
 		ChannelId:   c.channelId,
@@ -236,7 +236,7 @@ func (c *StreamingRTCConn) onICECandidate(i *webrtc.ICECandidate, clanId, channe
 		return err
 	}
 
-	return c.ws.SendMessage(&radiostation.WsMsg{
+	return c.ws.SendMessage(&ws.WsMsg{
 		Key:         "ice_candidate",
 		Value:       candidateString,
 		ClanId:      clanId,

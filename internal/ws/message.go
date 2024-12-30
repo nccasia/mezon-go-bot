@@ -1,6 +1,10 @@
-package radiostation
+package ws
 
 import "encoding/json"
+
+type MsgContent struct {
+	Content string `json:"t"`
+}
 
 type WsMsg struct {
 	Key         string
