@@ -106,9 +106,13 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 			}
 
 			return nil
+		} else {
+			content := fmt.Sprintf("{\"t\":\"```Supported commands:   \\nCommand: *ncc8 play {ID} \\nCommand: *ncc8 stop    \",\"mk\":[{\"type\":\"t\",\"s\":0,\"e\":83}]}")
+			bot.SendMessage(message, content)
 		}
 
 	case constants.NCC8_ARG_STOP:
+		isPlaying = false
 		content := "{\"t\":\"NCC8 has not been broadcast.\"}"
 		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
 		if !ok {
