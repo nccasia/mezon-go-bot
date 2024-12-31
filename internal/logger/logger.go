@@ -19,12 +19,20 @@ func NewLogger(logFile string) *zap.Logger {
 
 	terminalSyncer := zapcore.AddSync(os.Stdout)
 
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "ts"
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.CallerKey = "caller"
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
 
 	fileCore := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
 	terminalCore := zapcore.NewCore(encoder, terminalSyncer, zapcore.DebugLevel)
 
-	logger := zap.New(zapcore.NewTee(fileCore, terminalCore))
+	logger := zap.New(
+		zapcore.NewTee(fileCore, terminalCore),
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.ErrorLevel),
+	)
 
 	return logger
 }

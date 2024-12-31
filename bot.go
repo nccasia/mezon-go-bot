@@ -23,6 +23,7 @@ type IBot interface {
 	Logger() *zap.Logger
 	Config() *config.AppConfig
 	MezonClient() *mezonsdk.Client
+	SendMessage(message *api.ChannelMessage, content string) error
 }
 
 type Bot struct {
@@ -114,7 +115,7 @@ func (b *Bot) Start() {
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 }
 
-type CommandHandler func(command string, args []string) error
+type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
 
 func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 	content := msg.GetContent()
@@ -129,12 +130,45 @@ func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 
 	if msgContent.Content != "" {
 		command, args := helper.ExtractMessage(msgContent.Content)
-		b.logger.Debug("[ExtractMessage]", zap.String("command", command), zap.Any("args", args))
 
 		if handler, exists := b.commands[command]; exists {
-			return handler(command, args)
+			return handler(command, args, msg)
 		}
 	}
 
+	return nil
+}
+
+func (b *Bot) SendMessage(message *api.ChannelMessage, content string) error {
+	messageRef := &api.MessageRef{
+		MessageRefId:             message.MessageId,
+		Content:                  message.Content,
+		MessageSenderId:          message.SenderId,
+		MessageSenderUsername:    message.Username,
+		MesagesSenderAvatar:      message.Avatar,
+		MessageSenderDisplayName: message.DisplayName,
+	}
+
+	err := b.MezonClient().Socket.SendMessage(&rtapi.Envelope{
+		Message: &rtapi.Envelope_ChannelMessageSend{
+			ChannelMessageSend: &rtapi.ChannelMessageSend{
+				ClanId:           message.ClanId,
+				ChannelId:        message.ChannelId,
+				Mode:             2,
+				Content:          content,
+				Mentions:         []*api.MessageMention{},
+				Attachments:      []*api.MessageAttachment{},
+				References:       []*api.MessageRef{messageRef},
+				AnonymousMessage: false,
+				MentionEveryone:  false,
+				Avatar:           "",
+				IsPublic:         true,
+				Code:             0,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
