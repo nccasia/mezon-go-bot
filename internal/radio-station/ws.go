@@ -111,7 +111,32 @@ func (s *WSConnection) pingPong() {
 }
 
 func (s *WSConnection) reconnect() {
-	// TODO:
+	go func() {
+		for {
+			_, _, err := s.conn.ReadMessage()
+			if err != nil {
+				log.Println("WebSocket disconnected, attempting to reconnect: ", err)
+
+				_ = s.conn.Close()
+
+				for {
+					conn, _, err := s.dialer.Dial(fmt.Sprintf("%s/ws?username=%s&token=%s", s.basePath, s.username, s.token), nil)
+					if err != nil {
+						log.Println("Reconnect failed, retrying in 5 seconds: ", err)
+						time.Sleep(5 * time.Second)
+						continue
+					}
+
+					s.conn = conn
+					log.Println("WebSocket reconnected successfully")
+					break
+				}
+
+				go s.recvMessage()
+				go s.pingPong()
+			}
+		}
+	}()
 }
 
 func (s *WSConnection) recvMessage() {
