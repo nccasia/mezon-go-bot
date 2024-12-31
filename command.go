@@ -98,6 +98,7 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 			isPlaying = true
 
 			err = rtcConn.SendAudioTrack(response.URL)
+			// err = rtcConn.SendAudioTrack("audio/lk_thucuoi.ogg")
 			content := fmt.Sprintf("{\"t\":\"NCC8 is broadcast on stream\",\"hg\":[{\"channelid\":\"%s\",\"s\":21,\"e\":40}]}", cfg.ChannelId)
 			bot.SendMessage(message, content)
 			if err != nil {
