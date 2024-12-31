@@ -6,35 +6,21 @@ import (
 	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
-	radiostation "mezon-go-bot/internal/radio-station"
-	"mezon-go-bot/internal/rtc"
 	"mezon-go-bot/pkg/clients"
 	"net/http"
 	"strconv"
 
+	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
-
-	"github.com/nccasia/mezon-go-sdk/configs"
-	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
 
 var isPlaying bool
+var player mezonsdk.AudioPlayer
 
 func Ncc8Handler(command string, args []string, message *api.ChannelMessage) error {
 	// Load Config
 	cfg := config.LoadConfig()
-
-	wsConn, err := radiostation.NewWSConnection(&configs.Config{
-		BasePath:     bot.Config().StnDomain,
-		Timeout:      15,
-		InsecureSkip: bot.Config().InsecureSkip,
-		UseSSL:       false,
-	}, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, cfg.BotName, cfg.Token)
-	if err != nil {
-		bot.Logger().Error("[ncc8] radiostation new ws signaling error", zap.Error(err))
-		return err
-	}
 
 	if len(args) == 0 || args[0] == "" {
 		content := fmt.Sprintf("{\"t\":\"```Supported commands:   \\nCommand: *ncc8 play {ID} \\nCommand: *ncc8 stop    \",\"mk\":[{\"type\":\"t\",\"s\":0,\"e\":83}]}")
@@ -87,24 +73,21 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 				return err
 			}
 
-			rtcConn, err := rtc.NewStreamingRTCConnection(webrtc.Configuration{
-				ICEServers: []webrtc.ICEServer{constants.ICE_GOOGLE},
-			}, wsConn, cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "NCC8")
+			player, err = mezonsdk.NewAudioPlayer(cfg.ClanId, cfg.ChannelId, bot.Config().BotId, "KOMU", "token")
 			if err != nil {
-				bot.Logger().Error("[ncc8] new streaming RTC connection error", zap.Error(err))
+				bot.Logger().Error("[ncc8] can not create player", zap.Error(err))
 				return err
 			}
 
 			isPlaying = true
 
-			err = rtcConn.SendAudioTrack(response.URL)
-			// err = rtcConn.SendAudioTrack("audio/lk_thucuoi.ogg")
-			content := fmt.Sprintf("{\"t\":\"NCC8 is broadcast on stream\",\"hg\":[{\"channelid\":\"%s\",\"s\":21,\"e\":40}]}", cfg.ChannelId)
-			bot.SendMessage(message, content)
+			err = player.Play(response.URL)
 			if err != nil {
 				bot.Logger().Error("[ncc8] failed to send audio file", zap.Error(err))
 				return err
 			}
+			content := fmt.Sprintf("{\"t\":\"NCC8 is broadcast on stream\",\"hg\":[{\"channelid\":\"%s\",\"s\":21,\"e\":40}]}", cfg.ChannelId)
+			bot.SendMessage(message, content)
 
 			return nil
 		} else {
@@ -115,26 +98,9 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 	case constants.NCC8_ARG_STOP:
 		isPlaying = false
 		content := "{\"t\":\"NCC8 has not been broadcast.\"}"
-		rtcConn, ok := rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
-		if !ok {
-			bot.Logger().Error("Connection not found for channelId", zap.String("channelId", cfg.ChannelId))
-		}
-
-		if conn, ok := rtcConn.(*rtc.StreamingRTCConn); ok {
-			content = "{\"t\":\"NCC8 has stopped broadcasting.\"}"
-			isPlaying = false
-			conn.Close(cfg.ChannelId)
-			bot.Logger().Info("Connection closed for channelId", zap.String("channelId", cfg.ChannelId))
-		} else {
-			bot.Logger().Error("Error casting connection", zap.String("channelId", cfg.ChannelId))
-		}
+		player.Close(cfg.ChannelId)
 
 		bot.SendMessage(message, content)
-
-		_, ok = rtc.MapStreamingRtcConn.Load(cfg.ChannelId)
-		if !ok {
-			bot.Logger().Info("Channel ID successfully removed from the map", zap.String("channelId", cfg.ChannelId))
-		}
 
 	default:
 		content := fmt.Sprintf("{\"t\":\"```Supported commands:   \\nCommand: *ncc8 play {ID} \\nCommand: *ncc8 stop    \",\"mk\":[{\"type\":\"t\",\"s\":0,\"e\":83}]}")
