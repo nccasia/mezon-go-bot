@@ -115,6 +115,9 @@ func (b *Bot) Start() {
 	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
 	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
+
+	HandlerPlayDefault(b.cfg.AudioBookChannelId, "456789", constants.BOOK_DIR, constants.BOOK_PREFIX)
+	HandlerPlayNCC8Default()
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
