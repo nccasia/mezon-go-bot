@@ -1,6 +1,6 @@
 package constants
 
 const (
-	BOOK_PREFIX = "audiobook_"
+	BOOK_PREFIX = "ncc8_"
 	BOOK_DIR    = "./audio"
 )

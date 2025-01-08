@@ -41,7 +41,7 @@ func main() {
 	http.HandleFunc("/health", healthCheckHandler)
 
 	// Define the port
-	port := "8080"
+	port := "9098"
 
 	log.Info("Starting server on port", zap.Any("port", port))
 
