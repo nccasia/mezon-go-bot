@@ -9,13 +9,13 @@ import (
 	"mezon-go-bot/internal/helper"
 	"mezon-go-bot/pkg/clients"
 	"net/http"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/robfig/cron/v3"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
@@ -27,6 +27,7 @@ var (
 	players            map[string]mezonsdk.AudioPlayer
 	mu                 sync.Mutex
 	currentEpisodeNcc8 int
+	isSchedule         bool
 )
 
 func init() {
@@ -53,7 +54,7 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 				return nil
 			}
 
-			if currentEpisodeNcc8 == episodeID {
+			if !isSchedule && currentEpisodeNcc8 == episodeID {
 				episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên stream", episodeID)
 				length := len(episodeText)
 				content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length-6, length+10)
@@ -217,27 +218,28 @@ func HandlerPlayNCC8Default() error {
 	}
 	mu.Unlock()
 
-	audioFiles, err := helper.GetAudioFiles(constants.NCC8_AUDIO_DIR, constants.NCC8_PREFIX)
-	if err != nil || len(audioFiles) == 0 {
-		bot.Logger().Error("[ncc8] failed to get audio files", zap.Error(err))
-		return err
-	}
+	return nil
 
-	for {
-		for _, file := range audioFiles {
-			filePath := strings.TrimSpace(path.Join(constants.NCC8_AUDIO_DIR, file))
-			if ncc8AudioName == "" {
-				content := fmt.Sprintf("{\"t\":\"Đang phát: %s\"}", file)
-				bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
-				err := player.Play(filePath)
-				if err != nil {
-					bot.Logger().Error("[ncc8] failed to play audio file", zap.String("file", file), zap.Error(err))
-					return err
-				}
-				player.Cancel(cfg.Ncc8ChannelId)
-			}
-		}
-	}
+	// audioFiles, err := helper.GetAudioFiles(constants.NCC8_AUDIO_DIR, constants.NCC8_PREFIX)
+	// if err != nil || len(audioFiles) == 0 {
+	// 	bot.Logger().Error("[ncc8] failed to get audio files", zap.Error(err))
+	// 	return err
+	// }
+
+	// for {
+	// 	for _, file := range audioFiles {
+	// 		filePath := strings.TrimSpace(path.Join(constants.NCC8_AUDIO_DIR, file))
+	// 		if ncc8AudioName == "" {
+	// 			// content := fmt.Sprintf("{\"t\":\"Đang phát: %s\"}", file)
+	// 			// bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+	// 			err := player.Play(filePath)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+	// 			player.Cancel(cfg.Ncc8ChannelId)
+	// 		}
+	// 	}
+	// }
 
 }
 
@@ -290,6 +292,103 @@ func HandlerPlayDefault(channelId, botId, dir, prefix string) error {
 	}(channelId)
 
 	return nil
+}
+
+func HandleClosePlayer() {
+	for channelId, player := range players {
+		fmt.Println("Closing player for channel:", channelId)
+		player.Close(channelId)
+	}
+}
+
+func ScheduleFridayAudio() {
+	cfg := config.LoadConfig()
+
+	// Create the scheduler
+	c := cron.New()
+
+	// Schedule the task to run every Friday at 11:30 AM
+	// _, err := c.AddFunc("30 11 * * 5", func() {
+	_, err := c.AddFunc("00 09 * * 5", func() {
+		// isSchedule = true
+		// ncc8AudioName = "1111"
+		player, _ := players[cfg.Ncc8ChannelId]
+		// player.Cancel(cfg.Ncc8ChannelId)
+
+		// Prepare audio file and episode details
+		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
+		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 206)
+		length := len(episodeText)
+		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
+
+		// Send initial message
+		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+
+		// Play the audio
+		err := player.Play("./audio/ncc8_206.ogg")
+		if err != nil {
+			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
+			return
+		}
+
+		// Send final message after 3 seconds
+		// content = "{\"t\":\"NCC8 phát sóng theo số đã kết thúc. Phát sóng tự động sẽ được phát sau 3s.\"}"
+		content = "{\"t\":\"NCC8 phát sóng hàng tuần đã kết thúc.\"}"
+
+		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+
+		// Graceful sleep before resetting values
+		// time.Sleep(3 * time.Second)
+
+		// Reset variables and cancel the player
+		// isSchedule = false
+		// ncc8AudioName = ""
+		player.Cancel(cfg.Ncc8ChannelId)
+	})
+
+	_, err = c.AddFunc("30 11 * * 5", func() {
+		// isSchedule = true
+		// ncc8AudioName = "1111"
+		player, _ := players[cfg.Ncc8ChannelId]
+		// player.Cancel(cfg.Ncc8ChannelId)
+
+		// Prepare audio file and episode details
+		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
+		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 207)
+		length := len(episodeText)
+		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
+
+		// Send initial message
+		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+
+		// Play the audio
+		err := player.Play("./audio/ncc8_207.ogg")
+		if err != nil {
+			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
+			return
+		}
+
+		// Send final message after 3 seconds
+		// content = "{\"t\":\"NCC8 phát sóng theo số đã kết thúc. Phát sóng tự động sẽ được phát sau 3s.\"}"
+		content = "{\"t\":\"NCC8 phát sóng hàng tuần đã kết thúc.\"}"
+
+		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+
+		// Graceful sleep before resetting values
+		// time.Sleep(3 * time.Second)
+
+		// Reset variables and cancel the player
+		// isSchedule = false
+		// ncc8AudioName = ""
+		player.Cancel(cfg.Ncc8ChannelId)
+	})
+
+	if err != nil {
+		bot.Logger().Error("[ncc8] failed to schedule cron job", zap.Error(err))
+	}
+
+	// Start the scheduler
+	c.Start()
 }
 
 func CheckinHandler(imageBase64 string) error {

@@ -3,7 +3,7 @@ module mezon-go-bot
 go 1.23.4
 
 require (
-	github.com/nccasia/mezon-go-sdk v0.0.27
+	github.com/nccasia/mezon-go-sdk v0.0.28
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.10
 	github.com/pion/webrtc/v4 v4.0.7
@@ -35,6 +35,7 @@ require (
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v4 v4.0.0 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect

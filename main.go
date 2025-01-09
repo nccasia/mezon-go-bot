@@ -1,10 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/logger"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"go.uber.org/zap"
 )
@@ -35,18 +39,42 @@ func main() {
 	// registry all command here
 	bot.RegisterCmd(constants.NCC8_COMMAND, Ncc8Handler)
 
-	bot.Start()
+	go bot.Start()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	// Register the health check endpoint
 	http.HandleFunc("/health", healthCheckHandler)
 
 	// Define the port
-	port := "9098"
+	port := "9097"
 
 	log.Info("Starting server on port", zap.Any("port", port))
 
-	// Start the HTTP server
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal("Error starting server", zap.Error(err))
+	// Start the HTTP server in the main goroutine
+	go func() {
+		if err := http.ListenAndServe(":"+port, nil); err != nil {
+			log.Fatal("Error starting server", zap.Error(err))
+		}
+	}()
+
+	// Chờ tín hiệu dừng
+	<-stop
+	fmt.Println("Received stop signal. Cleaning up...")
+
+	// // Dọn dẹp trước khi kết thúc
+	cleanup()
+
+	// // Dừng server nếu có
+	fmt.Println("Server stopped.")
+}
+
+func cleanup() {
+	// Đảm bảo bot đã đóng các kết nối, dừng các tác vụ nền
+	if bot != nil {
+		fmt.Println("Closing bot and cleaning up resources...")
+		bot.Stop() // Giả sử bạn có một hàm `Close` để dọn dẹp
 	}
+	fmt.Println("Cleanup completed.")
 }

@@ -63,7 +63,7 @@ func (b *Bot) RegisterCmd(prefix string, cmdHandler CommandHandler) {
 
 // Stop implements IBot.
 func (b *Bot) Stop() {
-	panic("unimplemented")
+	HandleClosePlayer()
 }
 
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
@@ -109,8 +109,9 @@ func (b *Bot) Start() {
 	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 
-	HandlerPlayDefault(b.cfg.AudioBookChannelId, "1840653921022906368", constants.BOOK_DIR, constants.BOOK_PREFIX)
 	HandlerPlayNCC8Default()
+	ScheduleFridayAudio()
+	// HandlerPlayDefault(b.cfg.AudioBookChannelId, "1840653921022906368", constants.BOOK_DIR, constants.BOOK_PREFIX)
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
