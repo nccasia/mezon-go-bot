@@ -48,7 +48,7 @@ func main() {
 	http.HandleFunc("/health", healthCheckHandler)
 
 	// Define the port
-	port := "9097"
+	port := "9098"
 
 	log.Info("Starting server on port", zap.Any("port", port))
 
@@ -59,22 +59,21 @@ func main() {
 		}
 	}()
 
-	// Chờ tín hiệu dừng
+	// Wait for stop signal
 	<-stop
 	fmt.Println("Received stop signal. Cleaning up...")
 
-	// // Dọn dẹp trước khi kết thúc
+	// Clean up before finishing
 	cleanup()
 
-	// // Dừng server nếu có
+	// Stop server
 	fmt.Println("Server stopped.")
 }
 
 func cleanup() {
-	// Đảm bảo bot đã đóng các kết nối, dừng các tác vụ nền
 	if bot != nil {
 		fmt.Println("Closing bot and cleaning up resources...")
-		bot.Stop() // Giả sử bạn có một hàm `Close` để dọn dẹp
+		bot.Stop()
 	}
 	fmt.Println("Cleanup completed.")
 }
