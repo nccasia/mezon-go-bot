@@ -22,6 +22,11 @@ type AppConfig struct {
 	AudioBookChannelId string `json:"audiobook_channel_id" mapstructure:"audiobook_channel_id"`
 	BotName            string `json:"bot_name" mapstructure:"bot_name"`
 	Token              string `json:"token" mapstructure:"token"`
+	Ncc8AudioDir       string `json:"ncc8_audio_dir" mapstructure:"ncc8_audio_dir"`
+	Ncc8Prefix         string `json:"ncc8_prefix" mapstructure:"ncc8_prefix"`
+	BookPrefix         string `json:"book_prefix" mapstructure:"book_prefix"`
+	BookDir            string `json:"book_dir" mapstructure:"book_dir"`
+	BotBookId          string `json:"bot_book_id" mapstructure:"bot_book_id"`
 }
 
 func LoadConfig(cPath ...string) *AppConfig {

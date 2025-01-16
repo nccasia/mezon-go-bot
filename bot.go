@@ -111,7 +111,7 @@ func (b *Bot) Start() {
 
 	HandlerPlayNCC8Default()
 	ScheduleFridayAudio()
-	// HandlerPlayDefault(b.cfg.AudioBookChannelId, "1840653921022906368", constants.BOOK_DIR, constants.BOOK_PREFIX)
+	HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix)
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
