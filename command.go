@@ -219,8 +219,6 @@ func HandlerPlayNCC8Default() error {
 	}
 	mu.Unlock()
 
-	return nil
-
 	audioFiles, err := helper.GetAudioFiles(cfg.Ncc8AudioDir, cfg.Ncc8Prefix)
 	if err != nil || len(audioFiles) == 0 {
 		bot.Logger().Error("[ncc8] failed to get audio files", zap.Error(err))
@@ -340,7 +338,7 @@ func ScheduleFridayAudio() {
 	}
 	mu.Unlock()
 	// Schedule the task to run every Friday at 11:30 AM +7 (04:30 AM UTC)
-	_, err := c.AddFunc("33 11 * * 4", func() {
+	_, err := c.AddFunc("30 4 * * 5", func() {
 		// isSchedule = true
 		// ncc8AudioName = "1111"
 
@@ -348,7 +346,7 @@ func ScheduleFridayAudio() {
 
 		// Prepare audio file and episode details
 		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
-		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 207)
+		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 208)
 		length := len(episodeText)
 		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
 
@@ -356,7 +354,7 @@ func ScheduleFridayAudio() {
 		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
 		// Play the audio
-		err := player.Play("./audio/ncc8_207.ogg")
+		err := player.Play("./audio/ncc8_208.ogg")
 		if err != nil {
 			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
 			return
