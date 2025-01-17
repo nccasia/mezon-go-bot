@@ -301,13 +301,13 @@ func HandleClosePlayer() {
 	defer mu.Unlock()
 
 	// Close player2
-	player2, exists2 := players[cfg.AudioBookChannelId]
-	if exists2 {
-		fmt.Printf("Closing player for channel %s...\n", cfg.AudioBookChannelId)
-		player2.Cancel(cfg.AudioBookChannelId)
-	} else {
-		fmt.Printf("No player found for channel %s.\n", cfg.AudioBookChannelId)
-	}
+	// player2, exists2 := players[cfg.AudioBookChannelId]
+	// if exists2 {
+	// 	fmt.Printf("Closing player for channel %s...\n", cfg.AudioBookChannelId)
+	// 	player2.Cancel(cfg.AudioBookChannelId)
+	// } else {
+	// 	fmt.Printf("No player found for channel %s.\n", cfg.AudioBookChannelId)
+	// }
 
 	// Close player1
 	player1, exists1 := players[cfg.Ncc8ChannelId]

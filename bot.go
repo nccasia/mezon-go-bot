@@ -110,8 +110,8 @@ func (b *Bot) Start() {
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 
 	// go HandlerPlayNCC8Default()
-	go ScheduleFridayAudio()
-	go HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix)
+	ScheduleFridayAudio()
+	// go HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix)
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
