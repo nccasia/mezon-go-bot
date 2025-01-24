@@ -63,7 +63,21 @@ func (b *Bot) RegisterCmd(prefix string, cmdHandler CommandHandler) {
 
 // Stop implements IBot.
 func (b *Bot) Stop() {
+	// Stop playing sound
 	HandleClosePlayer()
+
+	// Close socket if open
+	if b.mzn != nil {
+		err := b.mzn.Socket.Close()
+		if err != nil {
+			b.logger.Error("[Bot] Failed to close socket", zap.Error(err))
+		} else {
+			b.logger.Info("[Bot] Socket closed successfully")
+		}
+	}
+
+	// Send notification that bot has stopped
+	b.logger.Info("[Bot] Bot stopped successfully")
 }
 
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
@@ -109,9 +123,17 @@ func (b *Bot) Start() {
 	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 
-	// go HandlerPlayNCC8Default()
 	ScheduleFridayAudio()
-	// go HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix)
+	// go func() {
+	// 	if err := HandlerPlayNCC8Default(); err != nil {
+	// 		b.logger.Error("Error in HandlerPlayNCC8Default", zap.Error(err))
+	// 	}
+	// }()
+	// go func() {
+	// 	if err := HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix); err != nil {
+	// 		b.logger.Error("Error in HandlerPlayDefault", zap.Error(err))
+	// 	}
+	// }()
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error

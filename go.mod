@@ -3,7 +3,7 @@ module mezon-go-bot
 go 1.23.4
 
 require (
-	github.com/nccasia/mezon-go-sdk v0.0.29
+	github.com/nccasia/mezon-go-sdk v0.0.31
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.10
 	github.com/pion/webrtc/v4 v4.0.7

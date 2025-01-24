@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -26,17 +28,17 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Setup Logger
-	log := logger.NewLogger(cfg.LogFile)
-	defer log.Sync() // Flush log
+	logger := logger.NewLogger(cfg.LogFile)
+	defer logger.Sync() // Flush log
 
 	// Start Bot Checkin
 	var err error
-	bot, err = NewBot(cfg, log)
+	bot, err = NewBot(cfg, logger)
 	if err != nil {
-		log.Fatal("Failed to initialize bot checkin", zap.Error(err))
+		logger.Fatal("Failed to initialize bot checkin", zap.Error(err))
 	}
 
-	// registry all command here
+	// Register all commands here
 	bot.RegisterCmd(constants.NCC8_COMMAND, Ncc8Handler)
 
 	go bot.Start()
@@ -50,12 +52,17 @@ func main() {
 	// Define the port
 	port := "9098"
 
-	log.Info("Starting server on port", zap.Any("port", port))
+	logger.Info("Starting server on port", zap.Any("port", port))
+
+	// Create an HTTP server instance
+	server := &http.Server{
+		Addr: ":" + port,
+	}
 
 	// Start the HTTP server in the main goroutine
 	go func() {
-		if err := http.ListenAndServe(":"+port, nil); err != nil {
-			log.Fatal("Error starting server", zap.Error(err))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatal("Error starting server", zap.Error(err))
 		}
 	}()
 
@@ -65,6 +72,14 @@ func main() {
 
 	// Clean up before finishing
 	cleanup()
+
+	// Gracefully shutdown the server
+	fmt.Println("Shutting down server...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Fatal("Server Shutdown Failed", zap.Error(err))
+	}
 
 	// Stop server
 	fmt.Println("Server stopped.")
