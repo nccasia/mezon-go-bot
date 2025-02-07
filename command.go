@@ -329,7 +329,7 @@ func ScheduleFridayAudio() {
 	}
 	mu.Unlock()
 	// Schedule the task to run every Friday at 11:30 AM +7 (04:30 AM UTC)
-	_, err := c.AddFunc("48 9 * * 5", func() {
+	_, err := c.AddFunc("30 4 * * 5", func() {
 		// isSchedule = true
 		// ncc8AudioName = "1111"
 
@@ -342,7 +342,7 @@ func ScheduleFridayAudio() {
 		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
 
 		// Send initial message
-		// bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
 		// Play the audio
 		err := player.Play("./audio/ncc8_209.ogg")
