@@ -337,7 +337,7 @@ func ScheduleFridayAudio() {
 
 		// Prepare audio file and episode details
 		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
-		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 209)
+		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 210)
 		length := len(episodeText)
 		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
 
