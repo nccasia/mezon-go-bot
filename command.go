@@ -345,7 +345,7 @@ func ScheduleFridayAudio() {
 		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
 		// Play the audio
-		err := player.Play("./audio/ncc8_211.ogg")
+		err := player.Play("./audio/ncc8_211_new.ogg")
 		if err != nil {
 			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
 			return
