@@ -337,7 +337,7 @@ func ScheduleFridayAudio() {
 
 		// Prepare audio file and episode details
 		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
-		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 211)
+		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 212)
 		length := len(episodeText)
 		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
 
@@ -345,7 +345,7 @@ func ScheduleFridayAudio() {
 		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
 		// Play the audio
-		err := player.Play("./audio/ncc8_211_new.ogg")
+		err := player.Play("./audio/ncc8_212.ogg")
 		if err != nil {
 			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
 			return
