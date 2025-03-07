@@ -329,42 +329,42 @@ func ScheduleFridayAudio() {
 	}
 	mu.Unlock()
 	// Schedule the task to run every Friday at 11:30 AM +7 (04:30 AM UTC)
-	_, err := c.AddFunc("30 4 * * 5", func() {
-		// isSchedule = true
-		// ncc8AudioName = "1111"
+	// _, err := c.AddFunc("30 4 * * 5", func() {
+	// isSchedule = true
+	// ncc8AudioName = "1111"
 
-		// player.Cancel(cfg.Ncc8ChannelId)
+	// player.Cancel(cfg.Ncc8ChannelId)
 
-		// Prepare audio file and episode details
-		// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
-		episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 213)
-		length := len(episodeText)
-		content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
+	// Prepare audio file and episode details
+	// fileNCC8Path := filepath.Join(constants.NCC8_AUDIO_DIR, ncc8AudioName)
+	episodeText := fmt.Sprintf("NCC8 số %d đang được phát trên ", 213)
+	length := len(episodeText)
+	content := fmt.Sprintf("{\"t\":\"%s\",\"hg\":[{\"channelid\":\"%s\",\"s\":%d,\"e\":%d}]}", episodeText, cfg.Ncc8ChannelId, length, length+10)
 
-		// Send initial message
-		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+	// Send initial message
+	bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
-		// Play the audio
-		err := player.Play("./audio/ncc8_213.ogg")
-		if err != nil {
-			bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
-			return
-		}
+	// Play the audio
+	err := player.Play("./audio/ncc8_213.ogg")
+	if err != nil {
+		bot.Logger().Error("[ncc8] failed to play audio from URL", zap.String("url", ncc8AudioName), zap.Error(err))
+		return
+	}
 
-		// Send final message after 3 seconds
-		// content = "{\"t\":\"NCC8 phát sóng theo số đã kết thúc. Phát sóng tự động sẽ được phát sau 3s.\"}"
-		content = "{\"t\":\"NCC8 phát sóng hàng tuần đã kết thúc.\"}"
+	// Send final message after 3 seconds
+	// content = "{\"t\":\"NCC8 phát sóng theo số đã kết thúc. Phát sóng tự động sẽ được phát sau 3s.\"}"
+	content = "{\"t\":\"NCC8 phát sóng hàng tuần đã kết thúc.\"}"
 
-		bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
+	bot.SendMessage(nil, content, cfg.Ncc8ChannelId)
 
-		// Graceful sleep before resetting values
-		// time.Sleep(3 * time.Second)
+	// Graceful sleep before resetting values
+	// time.Sleep(3 * time.Second)
 
-		// Reset variables and cancel the player
-		// isSchedule = false
-		// ncc8AudioName = ""
-		player.Cancel(cfg.Ncc8ChannelId)
-	})
+	// Reset variables and cancel the player
+	// isSchedule = false
+	// ncc8AudioName = ""
+	player.Cancel(cfg.Ncc8ChannelId)
+	// })
 
 	if err != nil {
 		bot.Logger().Error("[ncc8] failed to schedule cron job", zap.Error(err))
