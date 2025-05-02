@@ -8,7 +8,6 @@ import (
 	"mezon-go-bot/internal/rtc"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
-	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/rtapi"
 	"github.com/pion/webrtc/v4"
@@ -25,7 +24,7 @@ type IBot interface {
 	Logger() *zap.Logger
 	Config() *config.AppConfig
 	MezonClient() *mezonsdk.Client
-	SendMessage(message *api.ChannelMessage, content string) error
+	SendMessage(message *api.ChannelMessage, content, channelId string) error
 }
 
 type Bot struct {
@@ -64,19 +63,27 @@ func (b *Bot) RegisterCmd(prefix string, cmdHandler CommandHandler) {
 
 // Stop implements IBot.
 func (b *Bot) Stop() {
-	panic("unimplemented")
+	// Stop playing sound
+	HandleClosePlayer()
+
+	// Close socket if open
+	if b.mzn != nil {
+		err := b.mzn.Socket.Close()
+		if err != nil {
+			b.logger.Error("[Bot] Failed to close socket", zap.Error(err))
+		} else {
+			b.logger.Info("[Bot] Socket closed successfully")
+		}
+	}
+
+	// Send notification that bot has stopped
+	b.logger.Info("[Bot] Bot stopped successfully")
 }
 
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
-	mzClient, err := mezonsdk.NewClient(&configs.Config{
-		BasePath:     cfg.MznDomain,
-		ApiKey:       cfg.ApiKey,
-		Timeout:      15,
-		InsecureSkip: cfg.InsecureSkip,
-		UseSSL:       cfg.UseSSL,
-	})
+	mzClient, err := mezonsdk.NewClient(cfg.ApiKey)
 	if err != nil {
 		logger.Error("[NewBot] ws signaling dm error", zap.Error(err))
 		return nil, err
@@ -116,15 +123,24 @@ func (b *Bot) Start() {
 	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
 	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 
-	HandlerPlayDefault(b.cfg.AudioBookChannelId, "456789", constants.BOOK_DIR, constants.BOOK_PREFIX)
-	HandlerPlayNCC8Default()
+	ScheduleFridayAudio()
+	// go func() {
+	// 	if err := HandlerPlayNCC8Default(); err != nil {
+	// 		b.logger.Error("Error in HandlerPlayNCC8Default", zap.Error(err))
+	// 	}
+	// }()
+	// go func() {
+	// 	if err := HandlerPlayDefault(b.cfg.AudioBookChannelId, b.cfg.BotBookId, b.cfg.BookDir, b.cfg.BookPrefix); err != nil {
+	// 		b.logger.Error("Error in HandlerPlayDefault", zap.Error(err))
+	// 	}
+	// }()
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
 
 func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 	content := msg.GetContent()
-	if len(content) == 0 || len(content) >= 64 || content == "{}" {
+	if len(content) == 0 || len(content) >= 64 || content == "{}" || msg.Code.Value != 0 {
 		return nil
 	}
 
@@ -144,21 +160,26 @@ func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 	return nil
 }
 
-func (b *Bot) SendMessage(message *api.ChannelMessage, content string) error {
-	messageRef := &api.MessageRef{
-		MessageRefId:             message.MessageId,
-		Content:                  message.Content,
-		MessageSenderId:          message.SenderId,
-		MessageSenderUsername:    message.Username,
-		MesagesSenderAvatar:      message.Avatar,
-		MessageSenderDisplayName: message.DisplayName,
+func (b *Bot) SendMessage(message *api.ChannelMessage, content, channelId string) error {
+	var messageRef *api.MessageRef
+	channelIdSend := channelId
+	if message != nil {
+		channelIdSend = message.ChannelId
+		messageRef = &api.MessageRef{
+			MessageRefId:             message.MessageId,
+			Content:                  message.Content,
+			MessageSenderId:          message.SenderId,
+			MessageSenderUsername:    message.Username,
+			MesagesSenderAvatar:      message.Avatar,
+			MessageSenderDisplayName: message.DisplayName,
+		}
 	}
 
 	err := b.MezonClient().Socket.SendMessage(&rtapi.Envelope{
 		Message: &rtapi.Envelope_ChannelMessageSend{
 			ChannelMessageSend: &rtapi.ChannelMessageSend{
-				ClanId:           message.ClanId,
-				ChannelId:        message.ChannelId,
+				ClanId:           b.cfg.ClanId,
+				ChannelId:        channelIdSend,
 				Mode:             2,
 				Content:          content,
 				Mentions:         []*api.MessageMention{},
@@ -173,6 +194,7 @@ func (b *Bot) SendMessage(message *api.ChannelMessage, content string) error {
 		},
 	})
 	if err != nil {
+		b.logger.Error("Error sending message", zap.Error(err))
 		return err
 	}
 	return nil

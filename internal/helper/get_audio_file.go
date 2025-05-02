@@ -54,3 +54,42 @@ func FindFileByName(directory, fileName string) (string, error) {
 	}
 	return result, nil
 }
+
+// Remove duplicates episode in a list
+func RemoveDuplicatesFile(episodes []int) []int {
+	unique := make(map[int]bool)
+	var result []int
+	for _, ep := range episodes {
+		if !unique[ep] {
+			unique[ep] = true
+			result = append(result, ep)
+		}
+	}
+	return result
+}
+
+// Divide the list into groups
+func SplitEpisodesByRoundNumber(episodes []int, threshold int) [][]int {
+	var result [][]int
+	var currentBatch []int
+
+	for _, ep := range episodes {
+		// If number is less than next threshold, add to current group
+		if ep < threshold {
+			currentBatch = append(currentBatch, ep)
+		} else {
+			// Once the threshold is reached, add the current group to the results and create a new group.
+			if len(currentBatch) > 0 {
+				result = append(result, currentBatch)
+			}
+			// Create new group with number starting from next threshold
+			currentBatch = []int{ep}
+			threshold += 100
+		}
+	}
+	// Add the last group to the result if present
+	if len(currentBatch) > 0 {
+		result = append(result, currentBatch)
+	}
+	return result
+}
