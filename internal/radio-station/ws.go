@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/nccasia/mezon-go-sdk/configs"
+	"github.com/nccasia/mezon-go-sdk/constants"
 	"github.com/nccasia/mezon-go-sdk/utils"
 )
 
@@ -43,17 +44,16 @@ func NewWSConnection(c *configs.Config, clanId, channelId, userId, username, tok
 	// if err != nil {
 	// 	return nil, err
 	// }
-
 	client := &WSConnection{
 		username: username,
 		token:    token,
-		basePath: utils.GetBasePath("wss", c.BasePath, c.UseSSL),
+		basePath: utils.GetBasePath("wss", constants.MznBasePath, constants.UseSSL),
 		// basePath:  utils.GetBasePath("ws", c.BasePath, c.UseSSL),
 		clanId:    clanId,
 		onMessage: recvDefaultHandler,
 	}
 
-	if c.InsecureSkip {
+	if constants.InsecureSkip {
 		tlsConfig := &tls.Config{
 			InsecureSkipVerify: true,
 		}
