@@ -3,15 +3,12 @@ package main
 import (
 	"encoding/json"
 	"mezon-go-bot/config"
-	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/helper"
 	"mezon-go-bot/internal/rtc"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
-	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/rtapi"
-	"github.com/pion/webrtc/v4"
 	"go.uber.org/zap"
 )
 
@@ -70,13 +67,7 @@ func (b *Bot) Stop() {
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
-	mzClient, err := mezonsdk.NewClient(&configs.Config{
-		BasePath:     cfg.MznDomain,
-		ApiKey:       cfg.ApiKey,
-		Timeout:      15,
-		InsecureSkip: cfg.InsecureSkip,
-		UseSSL:       cfg.UseSSL,
-	})
+	mzClient, err := mezonsdk.NewClient(cfg.ApiKey)
 	if err != nil {
 		logger.Error("[NewBot] ws signaling dm error", zap.Error(err))
 		return nil, err
@@ -106,15 +97,15 @@ func (b *Bot) Start() {
 		return nil
 	})
 
-	callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
-	})
-	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
-	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
-	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
-	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
-	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
-	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
+	//callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
+	//	ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
+	//})
+	//socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
+	//callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
+	//callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
+	//callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
+	//callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	//callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error
@@ -142,28 +133,25 @@ func (b *Bot) handleCommand(msg *api.ChannelMessage) error {
 }
 
 func (b *Bot) SendMessage(message *api.ChannelMessage, content string) error {
-	messageRef := &api.MessageRef{
+	/*messageRef := &api.MessageRef{
 		MessageRefId:             message.MessageId,
 		Content:                  message.Content,
 		MessageSenderId:          message.SenderId,
 		MessageSenderUsername:    message.Username,
 		MesagesSenderAvatar:      message.Avatar,
 		MessageSenderDisplayName: message.DisplayName,
-	}
+	}*/
 
 	err := b.MezonClient().Socket.SendMessage(&rtapi.Envelope{
 		Message: &rtapi.Envelope_ChannelMessageSend{
 			ChannelMessageSend: &rtapi.ChannelMessageSend{
-				ClanId:           message.ClanId,
-				ChannelId:        message.ChannelId,
-				Mode:             2,
-				Content:          content,
-				Mentions:         []*api.MessageMention{},
-				Attachments:      []*api.MessageAttachment{},
-				References:       []*api.MessageRef{messageRef},
+				ClanId:    message.ClanId,
+				ChannelId: message.ChannelId,
+				Mode:      2,
+				Content:   content,
+				//References:       []*api.MessageRef{messageRef},
 				AnonymousMessage: false,
 				MentionEveryone:  false,
-				Avatar:           "",
 				IsPublic:         true,
 				Code:             0,
 			},

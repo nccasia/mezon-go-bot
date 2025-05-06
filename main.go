@@ -34,7 +34,6 @@ func main() {
 
 	// registry all command here
 	bot.RegisterCmd(constants.NCC8_COMMAND, Ncc8Handler)
-
 	bot.Start()
 
 	// Register the health check endpoint
