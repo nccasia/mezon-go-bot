@@ -9,7 +9,6 @@ import (
 	"mezon-go-bot/internal/websocket"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
-	"github.com/nccasia/mezon-go-sdk/configs"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/rtapi"
 	"github.com/pion/webrtc/v4"
@@ -67,15 +66,10 @@ func (b *Bot) Stop() {
 func NewBot(cfg *config.AppConfig, logger *zap.Logger) (IBot, error) {
 
 	// make ws signaling
-	mzClient, err := mezonsdk.NewClient(&configs.Config{
-		BasePath:     cfg.MznDomain,
-		ApiKey:       cfg.ApiKey,
-		Timeout:      15,
-		InsecureSkip: cfg.InsecureSkip,
-		UseSSL:       cfg.UseSSL,
-	})
+	mzClient, err := mezonsdk.NewClient(cfg.ApiKey)
+
 	if err != nil {
-		logger.Error("[NewBot] ws signaling dm error", zap.Error(err))
+		logger.Error("[NewBot] ws signaling dm error", zap.Error(err), zap.String("cfg.ApiKey", cfg.ApiKey))
 		return nil, err
 	}
 
