@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"mezon-go-bot/config"
+	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/internal/helper"
 	"mezon-go-bot/internal/rtc"
+
+	"github.com/pion/webrtc/v4"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
@@ -97,15 +100,15 @@ func (b *Bot) Start() {
 		return nil
 	})
 
-	//callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
-	//	ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
-	//})
-	//socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
-	//callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
-	//callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
-	//callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
-	//callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
-	//callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
+	callService := rtc.NewCallService(b.cfg.BotId, socket, webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{constants.ICE_MEZON},
+	})
+	socket.SetOnWebrtcSignalingFwd(callService.OnWebsocketEvent)
+	callService.SetOnImage(CheckinHandler, constants.NUM_IMAGE_SNAPSHOT)
+	callService.SetAcceptCallFileAudio(constants.CHECKIN_ACCEPT_CALL_AUDIO_PATH)
+	callService.SetExitCallFileAudio(constants.CHECKIN_EXIT_CALL_AUDIO_PATH)
+	callService.SetCheckinSuccessFileAudio(constants.CHECKIN_CHECKIN_SUCCESS_AUDIO_PATH)
+	callService.SetCheckinFailFileAudio(constants.CHECKIN_CHECKIN_FAIL_AUDIO_PATH)
 }
 
 type CommandHandler func(command string, args []string, msg *api.ChannelMessage) error

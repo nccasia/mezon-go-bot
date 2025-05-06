@@ -6,16 +6,27 @@ import (
 	"mezon-go-bot/config"
 	"mezon-go-bot/internal/constants"
 	"mezon-go-bot/pkg/clients"
+	"sync"
 
 	mezonsdk "github.com/nccasia/mezon-go-sdk"
 	"github.com/nccasia/mezon-go-sdk/mezon-protobuf/mezon/v2/common/api"
 	"go.uber.org/zap"
 )
 
+var (
+	ncc8AudioName string
+	players       map[string]mezonsdk.AudioPlayer
+	mu            sync.Mutex
+)
+
+func init() {
+	players = make(map[string]mezonsdk.AudioPlayer)
+}
+
 func Ncc8Handler(command string, args []string, message *api.ChannelMessage) error {
 	cfg := config.LoadConfig()
 	cfg.ClanId = "1775731152322039808"
-	cfg.ChannelId = "1840654626240598016"
+	cfg.Ncc8ChannelId = "1840654626240598016"
 	client, err := mezonsdk.NewClient(cfg.ApiKey)
 	if err != nil {
 		fmt.Println("error", err)
@@ -23,14 +34,13 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 	}
 
 	bot.Logger().Info("[ncc8] starts")
-	audioPlayer, err := client.NewAudioPlayer(cfg.ClanId, cfg.ChannelId)
+	audioPlayer, err := client.NewAudioPlayer(cfg.ClanId, cfg.Ncc8ChannelId)
 
 	if len(args) == 0 || args[0] == "" {
 		content := fmt.Sprintf("{\"t\":\"```Supported commands:   \\nCommand: *ncc8 play {ID} \\nCommand: *ncc8 stop    \",\"mk\":[{\"type\":\"t\",\"s\":0,\"e\":83}]}")
 		bot.SendMessage(message, content)
 		return nil
 	}
-
 	switch args[0] {
 	case constants.NCC8_ARG_PLAY:
 		content := fmt.Sprintf("{\"t\":\"playing...\"}")
@@ -42,12 +52,12 @@ func Ncc8Handler(command string, args []string, message *api.ChannelMessage) err
 		bot.SendMessage(message, content)
 
 	case constants.NCC8_ARG_STOP:
-		content := "{\"t\":\"NCC8 has not been broadcast.\"}"
+		ncc8AudioName = ""
+		player, _ := players[cfg.Ncc8ChannelId]
+		player.Cancel(cfg.Ncc8ChannelId)
+		content := "{\"t\":\"NCC8 broadcast has been stopped.\"}"
 		bot.SendMessage(message, content)
-
-	default:
-		content := fmt.Sprintf("{\"t\":\"```Supported commands:   \\nCommand: *ncc8 play {ID} \\nCommand: *ncc8 stop    \",\"mk\":[{\"type\":\"t\",\"s\":0,\"e\":83}]}")
-		bot.SendMessage(message, content)
+		return nil
 	}
 
 	return nil
